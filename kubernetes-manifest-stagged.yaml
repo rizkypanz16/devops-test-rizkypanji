@@ -2,25 +2,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: devopstest
+  name: devopstest-stagged
   namespace: stagged
   labels:
-    app: devopstest
+    app: devopstest-stagged
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: devopstest
+      app: devopstest-stagged
   template:
     metadata:
       labels:
-        app: devopstest
+        app: devopstest-stagged
     spec:
       imagePullSecrets:
         - name: regcred
         - name: registry-crt
       containers:
-        - name: devopstest
+        - name: devopstest-stagged
           image: panzdb1.world:443/laraveltest:staggedV1
           ports:
             - containerPort: 8000
@@ -28,12 +28,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: devopstest-service
+  name: devopstest-stagged-service
   namespace: stagged
 spec:
   type: LoadBalancer
   selector:
-    app: devopstest
+    app: devopstest-stagged
   ports:
     - protocol: TCP
       port: 8000
