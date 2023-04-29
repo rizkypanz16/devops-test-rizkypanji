@@ -1,0 +1,32 @@
+# Stage 1: Install dependencies
+FROM composer:latest as depend
+WORKDIR /app
+RUN git clone https://github.com/rappasoft/laravel-boilerplate.git .
+RUN pwd && ls -l
+RUN mv .env.example .env
+RUN sed -i 's/DB_HOST=127.0.0.1/DB_HOST=192.168.7.31/' .env
+RUN sed -i 's/DB_PASSWORD=/DB_PASSWORD=ijinmasuk/' .env
+RUN composer update --no-interaction --no-suggest --prefer-dist -o
+#RUN composer install --prefer-dist --no-dev --no-scripts --no-progress
+
+# Stage 2: Build application
+FROM node:latest as build
+WORKDIR /app
+COPY --from=depend /app ./
+RUN npm install
+RUN npm ci && npm run dev
+
+# Stage 3: Final stage
+FROM php:8.1-fpm
+WORKDIR /var/www/html
+COPY --from=build /app ./
+
+RUN apt update && apt install -y libpq-dev libzip-dev zip
+RUN php artisan key:generate
+RUN docker-php-ext-install mysqli pdo pdo_mysql && docker-php-ext-enable pdo_mysql
+RUN php artisan migrate
+RUN php artisan db:seed
+RUN php artisan storage:link
+
+EXPOSE 8000
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
